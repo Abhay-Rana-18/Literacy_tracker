@@ -56,8 +56,12 @@ export default function DashboardLayout({
       >
         <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white font-bold flex-shrink-0">
-              DS
+            <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+              <img
+                src="/logo2.png"
+                alt="Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
             {isSidebarOpen && (
               <span className="font-semibold text-neutral-900 whitespace-nowrap">
