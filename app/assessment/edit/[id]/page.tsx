@@ -173,7 +173,6 @@ export default function EditAssessmentPage() {
     setError("");
 
     try {
-      // Validation
       if (!assessment.title.trim() || !assessment.description.trim()) {
         throw new Error("Please fill in all required fields");
       }
@@ -337,15 +336,11 @@ export default function EditAssessmentPage() {
         </Card>
 
         {/* Questions */}
-        <div className="space-y-4 mb-6">
+        <div className="space-y-4 mb  -6">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-bold text-gray-900">
               Questions ({questions.length})
             </h2>
-            <Button onClick={addQuestion} size="sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Question
-            </Button>
           </div>
 
           {questions.map((question, qIndex) => (
@@ -378,7 +373,6 @@ export default function EditAssessmentPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Question Text */}
                 <div>
                   <Label>Question *</Label>
                   <Textarea
@@ -392,7 +386,6 @@ export default function EditAssessmentPage() {
                   />
                 </div>
 
-                {/* Options */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <Label>Answer Options *</Label>
@@ -431,7 +424,6 @@ export default function EditAssessmentPage() {
                   </div>
                 </div>
 
-                {/* Correct Answer */}
                 <div>
                   <Label>Correct Answer *</Label>
                   <Select
@@ -455,7 +447,6 @@ export default function EditAssessmentPage() {
                   </Select>
                 </div>
 
-                {/* Explanation */}
                 <div>
                   <Label>Explanation (Optional)</Label>
                   <Textarea
@@ -471,6 +462,20 @@ export default function EditAssessmentPage() {
               </CardContent>
             </Card>
           ))}
+
+          {/* Add Question below last question */}
+          <Card className="border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors">
+            <CardContent className="py-8">
+              <Button
+                onClick={addQuestion}
+                variant="ghost"
+                className="w-full h-full text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Add New Question
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Action Buttons */}

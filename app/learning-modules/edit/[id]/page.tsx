@@ -306,14 +306,13 @@ export default function EditLearningModulePage() {
             <h2 className="text-xl font-bold text-gray-900">
               Lessons ({lessons.length})
             </h2>
-            <Button onClick={addLesson} size="sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Lesson
-            </Button>
           </div>
 
           {lessons.map((lesson, lIndex) => (
-            <Card key={lIndex} className="border-l-4 border-l-green-500">
+            <Card
+              key={lesson.id ?? lIndex}
+              className="border-l-4 border-l-green-500"
+            >
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <CardTitle className="text-lg">Lesson {lIndex + 1}</CardTitle>
@@ -391,6 +390,20 @@ export default function EditLearningModulePage() {
               </CardContent>
             </Card>
           ))}
+
+          {/* Add Lesson below last lesson */}
+          <Card className="border-2 border-dashed border-gray-300 hover:border-green-400 transition-colors">
+            <CardContent className="py-8">
+              <Button
+                onClick={addLesson}
+                variant="ghost"
+                className="w-full h-full text-green-600 hover:text-green-700 hover:bg-green-50"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Add New Lesson
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Action Buttons */}

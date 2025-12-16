@@ -336,10 +336,6 @@ export default function AddAssessmentPage() {
             <h2 className="text-xl font-bold text-gray-900">
               Questions ({questions.length})
             </h2>
-            <Button onClick={addQuestion} size="sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Question
-            </Button>
           </div>
 
           {questions.map((question, qIndex) => (
@@ -465,6 +461,20 @@ export default function AddAssessmentPage() {
               </CardContent>
             </Card>
           ))}
+
+          {/* Add Question Button - Below Questions */}
+          <Card className="border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors">
+            <CardContent className="py-8">
+              <Button
+                onClick={addQuestion}
+                variant="ghost"
+                className="w-full h-full text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Add New Question
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Submit Button */}

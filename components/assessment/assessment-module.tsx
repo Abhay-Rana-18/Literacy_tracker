@@ -249,10 +249,12 @@ export default function AssessmentModule() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen px-2 sm:px-3">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading assessments...</p>
+          <p className="mt-4 text-gray-600 text-sm sm:text-base">
+            Loading assessments...
+          </p>
         </div>
       </div>
     );
@@ -260,11 +262,13 @@ export default function AssessmentModule() {
 
   if (error && !selectedAssessment) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="max-w-md">
-          <CardContent className="pt-6">
-            <p className="text-red-600 mb-4">{error}</p>
-            <Button onClick={fetchAssessments}>Retry</Button>
+      <div className="flex items-center justify-center min-h-screen px-2 sm:px-3">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 px-4 sm:px-6">
+            <p className="text-red-600 mb-4 text-sm sm:text-base">{error}</p>
+            <Button onClick={fetchAssessments} className="w-full">
+              Retry
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -273,10 +277,10 @@ export default function AssessmentModule() {
 
   if (assessments.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="max-w-md">
-          <CardContent className="pt-6 text-center space-y-4">
-            <p className="text-gray-600 mb-4">
+      <div className="flex items-center justify-center min-h-screen px-2 sm:px-3">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-6 px-4 sm:px-6 text-center space-y-4">
+            <p className="text-gray-600 mb-4 text-sm sm:text-base">
               No assessments available at the moment
             </p>
             {(userRole === "teacher" || userRole === "admin") && (
@@ -304,86 +308,99 @@ export default function AssessmentModule() {
   // Statistics View
   if (showStats && statistics) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto px-2 py-3 sm:px-6 sm:py-6">
         <Button
           variant="outline"
           onClick={() => setShowStats(false)}
-          className="mb-4"
+          className="mb-4 text-sm"
+          size="sm"
         >
-          ← Back to Assessments
+          ← Back
         </Button>
 
         <Card>
-          <CardHeader>
-            <CardTitle>{statistics.assessment.title} - Statistics</CardTitle>
-            <CardDescription>
+          <CardHeader className="px-4 py-4 sm:px-6 sm:py-6">
+            <CardTitle className="text-lg sm:text-xl">
+              {statistics.assessment.title} - Statistics
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               {statistics.assessment.totalQuestions} questions
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="px-4 sm:px-6 space-y-4 sm:space-y-6">
             {/* Overview Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4">
               <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold">
+                <CardContent className="pt-3 pb-3 px-2 sm:pt-6 sm:pb-6 sm:px-6">
+                  <div className="text-xl sm:text-2xl font-bold">
                     {statistics.statistics.totalAttempts}
                   </div>
-                  <p className="text-sm text-gray-600">Total Attempts</p>
+                  <p className="text-[10px] sm:text-sm text-gray-600">
+                    Total Attempts
+                  </p>
                 </CardContent>
               </Card>
               <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold text-blue-600">
+                <CardContent className="pt-3 pb-3 px-2 sm:pt-6 sm:pb-6 sm:px-6">
+                  <div className="text-xl sm:text-2xl font-bold text-blue-600">
                     {statistics.statistics.averageScore}%
                   </div>
-                  <p className="text-sm text-gray-600">Average Score</p>
+                  <p className="text-[10px] sm:text-sm text-gray-600">
+                    Average Score
+                  </p>
                 </CardContent>
               </Card>
               <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold text-green-600">
+                <CardContent className="pt-3 pb-3 px-2 sm:pt-6 sm:pb-6 sm:px-6">
+                  <div className="text-xl sm:text-2xl font-bold text-green-600">
                     {statistics.statistics.highestScore}%
                   </div>
-                  <p className="text-sm text-gray-600">Highest Score</p>
+                  <p className="text-[10px] sm:text-sm text-gray-600">
+                    Highest Score
+                  </p>
                 </CardContent>
               </Card>
               <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold text-red-600">
+                <CardContent className="pt-3 pb-3 px-2 sm:pt-6 sm:pb-6 sm:px-6">
+                  <div className="text-xl sm:text-2xl font-bold text-red-600">
                     {statistics.statistics.lowestScore}%
                   </div>
-                  <p className="text-sm text-gray-600">Lowest Score</p>
+                  <p className="text-[10px] sm:text-sm text-gray-600">
+                    Lowest Score
+                  </p>
                 </CardContent>
               </Card>
             </div>
 
             {/* Score Distribution */}
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Score Distribution</CardTitle>
+              <CardHeader className="px-3 py-3 sm:px-6 sm:py-4">
+                <CardTitle className="text-base sm:text-lg">
+                  Score Distribution
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="px-3 sm:px-6 space-y-2 sm:space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-green-700 font-medium">
+                  <span className="text-green-700 font-medium text-xs sm:text-sm">
                     Literate (≥70%)
                   </span>
-                  <span className="font-bold">
+                  <span className="font-bold text-sm sm:text-base">
                     {statistics.statistics.scoreDistribution.literate}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-yellow-700 font-medium">
+                  <span className="text-yellow-700 font-medium text-xs sm:text-sm">
                     Semi-Literate (50-69%)
                   </span>
-                  <span className="font-bold">
+                  <span className="font-bold text-sm sm:text-base">
                     {statistics.statistics.scoreDistribution.semiLiterate}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-red-700 font-medium">
+                  <span className="text-red-700 font-medium text-xs sm:text-sm">
                     Illiterate (&lt;50%)
                   </span>
-                  <span className="font-bold">
+                  <span className="font-bold text-sm sm:text-base">
                     {statistics.statistics.scoreDistribution.illiterate}
                   </span>
                 </div>
@@ -393,25 +410,29 @@ export default function AssessmentModule() {
             {/* Recent Results */}
             {statistics.recentResults.length > 0 && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Recent Results</CardTitle>
+                <CardHeader className="px-3 py-3 sm:px-6 sm:py-4">
+                  <CardTitle className="text-base sm:text-lg">
+                    Recent Results
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
+                <CardContent className="px-3 sm:px-6">
+                  <div className="space-y-2 sm:space-y-3">
                     {statistics.recentResults.map((result, idx) => (
                       <div
                         key={idx}
-                        className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                        className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 p-2 sm:p-3 bg-gray-50 rounded-lg"
                       >
-                        <div>
-                          <p className="font-medium">{result.studentName}</p>
-                          <p className="text-sm text-gray-600">
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm sm:text-base truncate">
+                            {result.studentName}
+                          </p>
+                          <p className="text-xs sm:text-sm text-gray-600 truncate">
                             {result.studentEmail}
                           </p>
                         </div>
-                        <div className="text-right">
+                        <div className="text-left sm:text-right flex-shrink-0">
                           <p
-                            className={`font-bold ${
+                            className={`font-bold text-base sm:text-lg ${
                               result.score >= 70
                                 ? "text-green-600"
                                 : result.score >= 50
@@ -439,28 +460,34 @@ export default function AssessmentModule() {
 
   if (!isStarted && !isCompleted) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
+      <div className="max-w-2xl mx-auto px-2 py-3 sm:px-6 sm:py-6">
         <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
+          <CardHeader className="px-3 py-4 sm:px-6 sm:py-6">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
               <div>
-                <CardTitle>Digital Skills Assessment</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg sm:text-xl">
+                  Digital Skills Assessment
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm mt-1">
                   Choose an assessment to evaluate your digital literacy level
                 </CardDescription>
               </div>
               {(userRole === "teacher" || userRole === "admin") && (
-                <Button onClick={() => router.push("/assessment/add")}>
+                <Button
+                  onClick={() => router.push("/assessment/add")}
+                  size="sm"
+                  className="w-full sm:w-auto"
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Create New
                 </Button>
               )}
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="px-3 sm:px-6 space-y-4 sm:space-y-6">
             {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm">{error}</p>
+              <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-xs sm:text-sm">{error}</p>
               </div>
             )}
 
@@ -468,30 +495,30 @@ export default function AssessmentModule() {
               {assessments.map((assessment) => (
                 <div
                   key={assessment._id}
-                  className={`p-4 border-2 rounded-lg transition ${
+                  className={`p-3 sm:p-4 border-2 rounded-lg transition ${
                     selectedAssessment?._id === assessment._id
                       ? "border-blue-500 bg-blue-50"
                       : "border-gray-200"
                   }`}
                 >
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start gap-2">
                     <div
                       onClick={() => setSelectedAssessment(assessment)}
-                      className="flex-1 cursor-pointer"
+                      className="flex-1 cursor-pointer min-w-0"
                     >
-                      <h3 className="font-semibold text-lg">
+                      <h3 className="font-semibold text-base sm:text-lg">
                         {assessment.title}
                       </h3>
-                      <p className="text-sm text-gray-600 mt-1">
+                      <p className="text-xs sm:text-sm text-gray-600 mt-1">
                         {assessment.description}
                       </p>
-                      <div className="flex gap-4 mt-2 text-sm text-gray-500">
+                      <div className="flex flex-wrap gap-2 sm:gap-4 mt-2 text-xs sm:text-sm text-gray-500">
                         <span>📝 {assessment.questions.length} questions</span>
                         <span className="capitalize">
                           📊 {assessment.skillCategory}
                         </span>
                         {assessment.timeLimit && (
-                          <span>⏱️ {assessment.timeLimit} minutes</span>
+                          <span>⏱️ {assessment.timeLimit} min</span>
                         )}
                       </div>
                     </div>
@@ -499,7 +526,11 @@ export default function AssessmentModule() {
                     {(userRole === "teacher" || userRole === "admin") && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="flex-shrink-0 h-8 w-8 p-0"
+                          >
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -543,11 +574,11 @@ export default function AssessmentModule() {
             </div>
 
             {selectedAssessment && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                <h3 className="font-semibold text-blue-900 mb-2 text-sm sm:text-base">
                   Assessment Overview:
                 </h3>
-                <ul className="text-sm text-blue-800 space-y-1">
+                <ul className="text-xs sm:text-sm text-blue-800 space-y-1">
                   <li>• {selectedAssessment.questions.length} questions</li>
                   {selectedAssessment.timeLimit && (
                     <li>
@@ -575,10 +606,12 @@ export default function AssessmentModule() {
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
+          <AlertDialogContent className="max-w-[95vw] sm:max-w-lg mx-2">
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
+              <AlertDialogTitle className="text-base sm:text-lg">
+                Are you sure?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-xs sm:text-sm">
                 This action cannot be undone. This will permanently delete the
                 assessment.
                 {assessments.find((a) => a._id === assessmentToDelete) && (
@@ -589,11 +622,13 @@ export default function AssessmentModule() {
                 )}
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <AlertDialogCancel className="w-full sm:w-auto">
+                Cancel
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDelete}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
               >
                 Delete
               </AlertDialogAction>
@@ -606,34 +641,38 @@ export default function AssessmentModule() {
 
   if (isCompleted && result) {
     return (
-      <div className="max-w-2xl mx-auto p-6">
+      <div className="max-w-2xl mx-auto px-2 py-3 sm:px-6 sm:py-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Assessment Completed!</CardTitle>
+          <CardHeader className="px-3 sm:px-6">
+            <CardTitle className="text-lg sm:text-xl">
+              Assessment Completed!
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="text-center py-8">
-              <div className="text-5xl font-bold text-primary mb-2">
+          <CardContent className="px-3 sm:px-6 space-y-4 sm:space-y-6">
+            <div className="text-center py-6 sm:py-8">
+              <div className="text-4xl sm:text-5xl font-bold text-primary mb-2">
                 {result.percentage}%
               </div>
-              <div className="text-2xl font-semibold mb-4">
+              <div className="text-xl sm:text-2xl font-semibold mb-4">
                 Your Level:{" "}
                 <span className="text-yellow-600 capitalize">
                   {result.digitalLiteracyLevel}
                 </span>
               </div>
-              <div className="text-neutral-600">
+              <div className="text-neutral-600 text-sm sm:text-base">
                 You scored {result.score} out of{" "}
                 {selectedAssessment?.totalPoints} points
               </div>
               {result.feedback && (
-                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-blue-900">{result.feedback}</p>
+                <div className="mt-4 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-blue-900 text-sm sm:text-base">
+                    {result.feedback}
+                  </p>
                 </div>
               )}
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <Button
                 onClick={() => router.push("/dashboard")}
                 className="flex-1"
@@ -659,18 +698,20 @@ export default function AssessmentModule() {
   const currentQ = selectedAssessment.questions[currentQuestion];
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
+    <div className="max-w-2xl mx-auto px-2 py-3 sm:px-6 sm:py-6">
       <Card>
-        <CardHeader>
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <CardTitle>
+        <CardHeader className="px-3 py-4 sm:px-6 sm:py-6">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-3 mb-4">
+            <div className="flex-1">
+              <CardTitle className="text-base sm:text-lg">
                 Question {currentQuestion + 1} of{" "}
                 {selectedAssessment.questions.length}
               </CardTitle>
-              <CardDescription>{selectedAssessment.title}</CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
+                {selectedAssessment.title}
+              </CardDescription>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               <span className="text-sm font-semibold text-neutral-600">
                 {Math.round(getProgress())}%
               </span>
@@ -682,32 +723,38 @@ export default function AssessmentModule() {
           <Progress value={getProgress()} className="h-2" />
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="px-3 sm:px-6 space-y-4 sm:space-y-6">
           {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-xs sm:text-sm">{error}</p>
             </div>
           )}
 
           <div>
-            <h2 className="text-lg font-semibold mb-4">{currentQ.question}</h2>
+            <h2 className="text-base sm:text-lg font-semibold mb-4">
+              {currentQ.question}
+            </h2>
 
             <RadioGroup
               value={answers[currentQ.id] || ""}
               onValueChange={(value) => handleAnswer(currentQ.id, value)}
             >
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {currentQ.options.map((option, idx) => (
                   <Label
                     key={idx}
-                    className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition ${
+                    className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-4 border rounded-lg cursor-pointer transition ${
                       answers[currentQ.id] === option
                         ? "border-blue-500 bg-blue-50"
                         : "border-neutral-200 hover:bg-neutral-50"
                     }`}
                   >
-                    <RadioGroupItem value={option} id={`option-${idx}`} />
-                    <span className="font-medium text-neutral-900">
+                    <RadioGroupItem
+                      value={option}
+                      id={`option-${idx}`}
+                      className="flex-shrink-0"
+                    />
+                    <span className="font-medium text-neutral-900 text-sm sm:text-base">
                       {option}
                     </span>
                   </Label>
@@ -716,11 +763,13 @@ export default function AssessmentModule() {
             </RadioGroup>
           </div>
 
-          <div className="flex gap-4 justify-between">
+          <div className="flex gap-2 sm:gap-4 justify-between">
             <Button
               onClick={handlePrevious}
               disabled={currentQuestion === 0}
               variant="outline"
+              className="flex-1"
+              size="sm"
             >
               Previous
             </Button>
@@ -732,17 +781,21 @@ export default function AssessmentModule() {
                   submitting ||
                   getAnsweredCount() < selectedAssessment.questions.length
                 }
+                className="flex-1"
+                size="sm"
               >
-                {submitting ? "Submitting..." : "Submit Assessment"}
+                {submitting ? "Submitting..." : "Submit"}
               </Button>
             ) : (
-              <Button onClick={handleNext}>Next</Button>
+              <Button onClick={handleNext} className="flex-1" size="sm">
+                Next
+              </Button>
             )}
           </div>
 
           {getAnsweredCount() < selectedAssessment.questions.length &&
             currentQuestion === selectedAssessment.questions.length - 1 && (
-              <p className="text-sm text-amber-600 text-center">
+              <p className="text-xs sm:text-sm text-amber-600 text-center">
                 Please answer all questions before submitting
               </p>
             )}

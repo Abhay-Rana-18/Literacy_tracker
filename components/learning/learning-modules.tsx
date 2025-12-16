@@ -176,22 +176,24 @@ export default function LearningModules() {
   const getLevelColor = (level: string) => {
     switch (level) {
       case "basic":
-        return "bg-green-100 text-green-800";
+        return "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100";
       case "intermediate":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-amber-50 text-amber-700 ring-1 ring-amber-100";
       case "advanced":
-        return "bg-purple-100 text-purple-800";
+        return "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100";
       default:
-        return "bg-neutral-100 text-neutral-800";
+        return "bg-neutral-100 text-neutral-700";
     }
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-neutral-50 px-2">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading modules...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-neutral-200 border-t-neutral-700 mx-auto" />
+          <p className="mt-4 text-neutral-500 text-sm sm:text-base">
+            Loading modules...
+          </p>
         </div>
       </div>
     );
@@ -200,286 +202,351 @@ export default function LearningModules() {
   // Statistics View
   if (showStats && statistics) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <Button
-          variant="outline"
-          onClick={() => setShowStats(false)}
-          className="mb-4"
-        >
-          ← Back to Modules
-        </Button>
+      <div className="min-h-screen bg-neutral-50 px-2 py-4 sm:px-6 sm:py-8">
+        <div className="max-w-4xl mx-auto space-y-4">
+          <Button
+            variant="outline"
+            onClick={() => setShowStats(false)}
+            className="text-sm border-neutral-200 text-neutral-700 hover:bg-neutral-100"
+            size="sm"
+          >
+            ← Back to modules
+          </Button>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{statistics.module.title} - Statistics</CardTitle>
-            <CardDescription>
-              {statistics.module.totalLessons} lessons
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold">
+          <Card className="border-neutral-200 shadow-sm">
+            <CardHeader className="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100">
+              <CardTitle className="text-lg sm:text-xl text-neutral-900">
+                {statistics.module.title}
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm text-neutral-500">
+                {statistics.module.totalLessons} lessons • Cohort overview
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-4 sm:px-6 py-4 sm:py-6 space-y-5">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                <div className="rounded-xl border border-neutral-100 bg-neutral-50/60 px-3 py-3 sm:px-4 sm:py-4">
+                  <p className="text-xs text-neutral-500 mb-1">
+                    Total students
+                  </p>
+                  <p className="text-xl sm:text-2xl font-semibold text-neutral-900">
                     {statistics.statistics.totalStudents}
-                  </div>
-                  <p className="text-sm text-gray-600">Total Students</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold text-green-600">
+                  </p>
+                </div>
+                <div className="rounded-xl border border-emerald-50 bg-emerald-50/60 px-3 py-3 sm:px-4 sm:py-4">
+                  <p className="text-xs text-emerald-700 mb-1">Completed</p>
+                  <p className="text-xl sm:text-2xl font-semibold text-emerald-800">
                     {statistics.statistics.completedStudents}
-                  </div>
-                  <p className="text-sm text-gray-600">Completed</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold text-blue-600">
+                  </p>
+                </div>
+                <div className="rounded-xl border border-sky-50 bg-sky-50/60 px-3 py-3 sm:px-4 sm:py-4">
+                  <p className="text-xs text-sky-700 mb-1">In progress</p>
+                  <p className="text-xl sm:text-2xl font-semibold text-sky-800">
                     {statistics.statistics.inProgress}
-                  </div>
-                  <p className="text-sm text-gray-600">In Progress</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-2xl font-bold">
+                  </p>
+                </div>
+                <div className="rounded-xl border border-neutral-100 bg-neutral-50/60 px-3 py-3 sm:px-4 sm:py-4">
+                  <p className="text-xs text-neutral-500 mb-1">
+                    Avg. completion
+                  </p>
+                  <p className="text-xl sm:text-2xl font-semibold text-neutral-900">
                     {statistics.statistics.averageCompletion}%
-                  </div>
-                  <p className="text-sm text-gray-600">Avg Completion</p>
-                </CardContent>
-              </Card>
-            </div>
+                  </p>
+                </div>
+              </div>
 
-            {statistics.studentProgress.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Student Progress</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {statistics.studentProgress.map((student, idx) => (
-                      <div
-                        key={idx}
-                        className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div>
-                          <p className="font-medium">{student.studentName}</p>
-                          <p className="text-sm text-gray-600">
-                            {student.studentEmail}
-                          </p>
+              {statistics.studentProgress.length > 0 && (
+                <div className="rounded-xl border border-neutral-100 bg-white">
+                  <CardHeader className="px-4 py-3 sm:px-5 sm:py-4 border-b border-neutral-100">
+                    <CardTitle className="text-sm sm:text-base text-neutral-900">
+                      Student progress
+                    </CardTitle>
+                    <CardDescription className="text-xs sm:text-sm text-neutral-500">
+                      High‑level view of how learners are advancing
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="px-4 sm:px-5 py-3 sm:py-4">
+                    <div className="space-y-2.5 sm:space-y-3 max-h-[420px] overflow-y-auto">
+                      {statistics.studentProgress.map((student, idx) => (
+                        <div
+                          key={idx}
+                          className="flex flex-col sm:flex-row justify-between sm:items-center gap-2 rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2.5"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm text-neutral-900 truncate">
+                              {student.studentName}
+                            </p>
+                            <p className="text-xs text-neutral-500 truncate">
+                              {student.studentEmail}
+                            </p>
+                          </div>
+                          <div className="flex items-baseline gap-2 sm:gap-3 text-right">
+                            <p className="text-sm font-semibold text-sky-700">
+                              {student.completionPercentage}%
+                            </p>
+                            <p className="text-xs text-neutral-500">
+                              {student.lessonsCompleted} lessons
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold text-blue-600">
-                            {student.completionPercentage}%
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {student.lessonsCompleted} lessons
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </CardContent>
-        </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 p-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-neutral-900">
-            Learning Modules
-          </h1>
-          <p className="text-neutral-600 mt-2">
-            {userRole === "teacher" || userRole === "admin"
-              ? "Manage learning modules and track student progress"
-              : "Personalized learning paths based on your skill level"}
-          </p>
-        </div>
-        {(userRole === "teacher" || userRole === "admin") && (
-          <Button onClick={() => router.push("/learning-modules/add")}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Module
-          </Button>
-        )}
-      </div>
-
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-600 text-sm">{error}</p>
-        </div>
-      )}
-
-      {/* Level Filter */}
-      <div className="flex flex-wrap gap-2">
-        {(["All", "basic", "intermediate", "advanced"] as const).map(
-          (level) => (
-            <Button
-              key={level}
-              onClick={() => setSelectedLevel(level)}
-              variant={selectedLevel === level ? "default" : "outline"}
-              className="capitalize"
-            >
-              {level}
-            </Button>
-          )
-        )}
-      </div>
-
-      {/* Modules Grid */}
-      <div className="grid md:grid-cols-2 gap-6">
-        {filteredModules.map((module) => (
-          <Card
-            key={module._id}
-            className="hover:shadow-md transition-shadow flex flex-col"
-          >
-            <CardHeader>
-              <div className="flex items-start justify-between mb-2">
-                <CardTitle className="text-lg flex-1">{module.title}</CardTitle>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${getLevelColor(
-                      module.skillLevel
-                    )}`}
-                  >
-                    {module.skillLevel}
-                  </span>
-                  {(userRole === "teacher" || userRole === "admin") && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => fetchStatistics(module._id)}
-                        >
-                          <BarChart3 className="w-4 h-4 mr-2" />
-                          View Statistics
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            router.push(`/learning-modules/edit/${module._id}`)
-                          }
-                        >
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setModuleToDelete(module._id);
-                            setDeleteDialogOpen(true);
-                          }}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
+    <div className="min-h-screen bg-neutral-50 px-2 py-4 sm:px-6 sm:py-8">
+      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
+        {/* Top section card: title, description, filters, primary action */}
+        <Card className="border-neutral-200 shadow-sm">
+          <CardHeader className="px-4 py-4 sm:px-6 sm:py-5 border-b border-neutral-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-semibold text-neutral-900">
+                  Learning modules
+                </h1>
+                <p className="text-xs sm:text-sm text-neutral-500 mt-1">
+                  {userRole === "teacher" || userRole === "admin"
+                    ? "Organize content and monitor learner progress."
+                    : "Follow curated learning paths matched to your level."}
+                </p>
               </div>
-              <CardDescription>{module.description}</CardDescription>
-            </CardHeader>
-
-            <CardContent className="flex-1 space-y-4">
-              {userRole !== "teacher" && userRole !== "admin" && (
-                <div>
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-neutral-600">Progress</span>
-                    <span className="font-semibold">
-                      {getModuleProgress(module._id)}%
-                    </span>
-                  </div>
-                  <Progress
-                    value={getModuleProgress(module._id)}
-                    className="h-2"
-                  />
-                </div>
+              {(userRole === "teacher" || userRole === "admin") && (
+                <Button
+                  onClick={() => router.push("/learning-modules/add")}
+                  size="sm"
+                  className="gap-2 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="text-xs sm:text-sm">Create module</span>
+                </Button>
               )}
-
-              <div className="text-sm text-neutral-600">
-                {module.lessons.length} lessons
-                {module.duration && ` • ${module.duration} min`}
-                {userRole !== "teacher" &&
-                  userRole !== "admin" &&
-                  (isModuleCompleted(module._id)
-                    ? " • ✓ Completed"
-                    : " • In Progress")}
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 sm:px-6 py-3 sm:py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs sm:text-sm text-neutral-500">
+                Filter by level
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {(["All", "basic", "intermediate", "advanced"] as const).map(
+                  (level) => (
+                    <Button
+                      key={level}
+                      onClick={() => setSelectedLevel(level)}
+                      variant={selectedLevel === level ? "default" : "outline"}
+                      className={`capitalize text-xs sm:text-sm rounded-full ${
+                        selectedLevel === level
+                          ? "bg-neutral-900 hover:bg-neutral-800 text-white border-neutral-900"
+                          : "border-neutral-200 text-neutral-700 hover:bg-neutral-100"
+                      }`}
+                      size="sm"
+                    >
+                      {level}
+                    </Button>
+                  )
+                )}
               </div>
+            </div>
+          </CardContent>
+        </Card>
 
-              <Button
-                className="w-full"
-                onClick={() => router.push(`/learning-modules/${module._id}`)}
-              >
-                {userRole === "teacher" || userRole === "admin"
-                  ? "View Module"
-                  : isModuleCompleted(module._id)
-                  ? "Review"
-                  : "Continue"}
-              </Button>
+        {error && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs sm:text-sm text-amber-800">
+            {error}
+          </div>
+        )}
+
+        {/* Modules Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+          {filteredModules.map((module) => (
+            <Card
+              key={module._id}
+              className="flex flex-col border-neutral-200 hover:border-neutral-300 hover:shadow-sm transition"
+            >
+              <CardHeader className="px-4 py-4 sm:px-5 sm:py-5 border-b border-neutral-100">
+                <div className="flex items-start justify-between gap-3 mb-1">
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <CardTitle className="text-sm sm:text-base font-semibold text-neutral-900 truncate">
+                      {module.title}
+                    </CardTitle>
+                    <CardDescription className="text-xs sm:text-sm text-neutral-500 line-clamp-2">
+                      {module.description}
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                    <span
+                      className={`px-2 sm:px-3 py-1 rounded-full text-[10px] sm:text-xs font-medium capitalize ${getLevelColor(
+                        module.skillLevel
+                      )}`}
+                    >
+                      {module.skillLevel}
+                    </span>
+                    {(userRole === "teacher" || userRole === "admin") && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-neutral-500 hover:text-neutral-800 hover:bg-neutral-100"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="min-w-[180px]"
+                        >
+                          <DropdownMenuItem
+                            onClick={() => fetchStatistics(module._id)}
+                          >
+                            <BarChart3 className="w-4 h-4 mr-2" />
+                            View statistics
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              router.push(
+                                `/learning-modules/edit/${module._id}`
+                              )
+                            }
+                          >
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit module
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setModuleToDelete(module._id);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="text-red-600 focus:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="flex-1 px-4 sm:px-5 py-3 sm:py-4 space-y-3">
+                {userRole !== "teacher" && userRole !== "admin" && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[11px] sm:text-xs">
+                      <span className="text-neutral-500">Progress</span>
+                      <span className="font-medium text-neutral-700">
+                        {getModuleProgress(module._id)}%
+                      </span>
+                    </div>
+                    <Progress
+                      value={getModuleProgress(module._id)}
+                      className="h-1.5 bg-neutral-100"
+                    />
+                  </div>
+                )}
+
+                <div className="text-xs sm:text-sm text-neutral-500">
+                  {module.lessons.length} lessons
+                  {module.duration && ` • ${module.duration} min`}
+                  {userRole !== "teacher" &&
+                    userRole !== "admin" &&
+                    (isModuleCompleted(module._id)
+                      ? " • Completed"
+                      : " • In progress")}
+                </div>
+
+                <Button
+                  className="w-full mt-1 text-xs sm:text-sm"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => router.push(`/learning-modules/${module._id}`)}
+                >
+                  {userRole === "teacher" || userRole === "admin"
+                    ? "Open module"
+                    : isModuleCompleted(module._id)
+                    ? "Review module"
+                    : "Continue learning"}
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {filteredModules.length === 0 && (
+          <Card className="border-dashed border-neutral-200 bg-white">
+            <CardContent className="py-8 text-center px-4">
+              <p className="text-neutral-500 text-sm sm:text-base">
+                No modules found for this level.
+              </p>
+              {(userRole === "teacher" || userRole === "admin") && (
+                <Button
+                  className="mt-3 text-xs sm:text-sm"
+                  size="sm"
+                  onClick={() => router.push("/learning-modules/add")}
+                >
+                  Create your first module
+                </Button>
+              )}
             </CardContent>
           </Card>
-        ))}
+        )}
+
+        {/* Learning Tips */}
+        {userRole !== "teacher" && userRole !== "admin" && (
+          <Card className="border-neutral-200 bg-white">
+            <CardHeader className="px-4 py-3 sm:px-6 sm:py-4 border-b border-neutral-100">
+              <CardTitle className="text-sm sm:text-base text-neutral-900">
+                Learning tips
+              </CardTitle>
+              <CardDescription className="text-xs sm:text-sm text-neutral-500">
+                Simple habits that make your learning more effective.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="px-4 sm:px-6 py-3 sm:py-4">
+              <ul className="space-y-1.5 text-xs sm:text-sm text-neutral-700">
+                <li>Complete modules in order to build concepts gradually.</li>
+                <li>Practice regularly instead of cramming in one session.</li>
+                <li>Revisit earlier modules when something feels unclear.</li>
+                <li>Keep short notes of key ideas while you learn.</li>
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent className="max-w-[95vw] sm:max-w-lg mx-2">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-base sm:text-lg">
+                Delete module?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-xs sm:text-sm text-neutral-500">
+                This action cannot be undone. If learners are currently
+                enrolled, deletion may be blocked to avoid losing their
+                progress.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <AlertDialogCancel className="w-full sm:w-auto">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
+              >
+                Delete module
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
-
-      {filteredModules.length === 0 && (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <p className="text-gray-500">No modules found for this level</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Learning Tips */}
-      {userRole !== "teacher" && userRole !== "admin" && (
-        <Card className="bg-blue-50 border-blue-200">
-          <CardHeader>
-            <CardTitle className="text-blue-900">💡 Learning Tips</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-blue-800">
-            <p>• Complete modules in order for better understanding</p>
-            <p>• Practice regularly to improve retention</p>
-            <p>• Don't hesitate to revisit earlier modules</p>
-            <p>• Take notes while learning</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              learning module.
-              <span className="block mt-2 font-semibold">
-                Note: If students are using this module, deletion will be
-                prevented.
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

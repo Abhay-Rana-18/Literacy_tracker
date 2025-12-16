@@ -9,9 +9,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import {
+  Users,
+  TrendingUp,
+  Award,
+  AlertCircle,
+  BookOpen,
+  Clock,
+} from "lucide-react";
 
 interface StudentPerformance {
   studentName: string;
@@ -66,7 +73,6 @@ export default function TeacherDashboard() {
         return;
       }
 
-      // Check if user is teacher
       if (user) {
         const userData = JSON.parse(user);
         if (userData.role !== "teacher" && userData.role !== "admin") {
@@ -88,9 +94,9 @@ export default function TeacherDashboard() {
   };
 
   const skillLevelColor = {
-    literate: "bg-green-100 text-green-800",
-    "semi-literate": "bg-yellow-100 text-yellow-800",
-    illiterate: "bg-red-100 text-red-800",
+    literate: "bg-green-50 text-green-700 border-green-200",
+    "semi-literate": "bg-yellow-50 text-yellow-700 border-yellow-200",
+    illiterate: "bg-red-50 text-red-700 border-red-200",
   } as Record<string, string>;
 
   const getStudentsByLevel = (level: string) => {
@@ -120,7 +126,6 @@ export default function TeacherDashboard() {
       student.moduleCount += 1;
     });
 
-    // Calculate average progress for each student
     Array.from(uniqueStudents.values()).forEach((student) => {
       if (student.moduleCount > 0) {
         student.progress = Math.round(student.progress / student.moduleCount);
@@ -132,10 +137,10 @@ export default function TeacherDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen px-3">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <p className="mt-4 text-gray-600 font-medium">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -143,9 +148,9 @@ export default function TeacherDashboard() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
+      <div className="flex items-center justify-center min-h-screen px-3">
+        <div className="text-center max-w-md">
+          <p className="text-red-600 mb-4 font-medium">{error}</p>
           <Button onClick={fetchDashboardData}>Retry</Button>
         </div>
       </div>
@@ -157,211 +162,273 @@ export default function TeacherDashboard() {
   const students = getUniqueStudents();
 
   return (
-    <div className="space-y-8 p-6">
-      <div>
-        <h1 className="text-3xl font-bold text-neutral-900">
-          Teacher Dashboard
-        </h1>
-        <p className="text-neutral-600 mt-2">
-          Manage your students and track their progress
-        </p>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-6">
+        {/* Header */}
+        <div className="rounded-lg sm:rounded-xl text-black">
+          <h1 className="text-xl sm:text-3xl font-bold mb-1 sm:mb-2">
+            Teacher Dashboard
+          </h1>
+          <p className="text-gray-600 text-xs sm:text-base">
+            Manage your students and track their progress
+          </p>
+        </div>
 
-      {/* Overview Stats */}
-      <div className="grid md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Students
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {dashboardData.stats.totalStudents}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Enrolled students</p>
-          </CardContent>
-        </Card>
+        {/* Overview Stats - Mobile Compact */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          {/* Total Students */}
+          <Card className="border-gray-200">
+            <CardHeader className="pb-0 pt-2 px-3 sm:pb-2 sm:pt-6 sm:px-6">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs sm:text-sm font-semibold text-gray-700 leading-tight">
+                  Total
+                  <br className="sm:hidden" /> Students
+                </CardTitle>
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 flex-shrink-0" />
+              </div>
+            </CardHeader>
+            <CardContent className="px-3 pb-2 pt-1 sm:px-6 sm:pb-6 sm:pt-2">
+              <div className="text-3xl sm:text-4xl font-bold text-gray-900 mb-0">
+                {dashboardData.stats.totalStudents}
+              </div>
+              <p className="text-[10px] sm:text-xs text-gray-500">
+                Enrolled students
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">
-              Avg. Class Score
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {dashboardData.stats.averageClassScore || 0}%
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              {dashboardData.stats.assessmentsGiven} assessments given
-            </p>
-          </CardContent>
-        </Card>
+          {/* Class Average */}
+          <Card className="bg-green-50/50 border-green-100">
+            <CardHeader className="pb-0 pt-2 px-3 sm:pb-2 sm:pt-6 sm:px-6">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs sm:text-sm font-semibold text-gray-700 leading-tight">
+                  Class
+                  <br className="sm:hidden" /> Average
+                </CardTitle>
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />
+              </div>
+            </CardHeader>
+            <CardContent className="px-3 pb-2 pt-1 sm:px-6 sm:pb-6 sm:pt-2">
+              <div className="text-3xl sm:text-4xl font-bold text-gray-900 mb-0">
+                {dashboardData.stats.averageClassScore || 0}%
+              </div>
+              <p className="text-[10px] sm:text-xs text-gray-500">
+                {dashboardData.stats.assessmentsGiven} tests
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Literate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {getStudentsByLevel("literate")}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Advanced level</p>
-          </CardContent>
-        </Card>
+          {/* Literate */}
+          <Card className="border-gray-200">
+            <CardHeader className="pb-0 pt-2 px-3 sm:pb-2 sm:pt-6 sm:px-6">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs sm:text-sm font-semibold text-gray-700 leading-tight">
+                  Literate
+                </CardTitle>
+                <Award className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0" />
+              </div>
+            </CardHeader>
+            <CardContent className="px-3 pb-2 pt-1 sm:px-6 sm:pb-6 sm:pt-2">
+              <div className="text-3xl sm:text-4xl font-bold text-green-600 mb-0">
+                {getStudentsByLevel("literate")}
+              </div>
+              <p className="text-[10px] sm:text-xs text-gray-500">
+                Advanced level
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Need Support</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {getStudentsByLevel("illiterate")}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Requires attention</p>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Need Support */}
+          <Card className="border-gray-200">
+            <CardHeader className="pb-0 pt-2 px-3 sm:pb-2 sm:pt-6 sm:px-6">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xs sm:text-sm font-semibold text-gray-700 leading-tight">
+                  Need
+                  <br className="sm:hidden" /> Support
+                </CardTitle>
+                <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 flex-shrink-0" />
+              </div>
+            </CardHeader>
+            <CardContent className="px-3 pb-2 pt-1 sm:px-6 sm:pb-6 sm:pt-2">
+              <div className="text-3xl sm:text-4xl font-bold text-red-600 mb-0">
+                {getStudentsByLevel("illiterate")}
+              </div>
+              <p className="text-[10px] sm:text-xs text-gray-500">
+                Requires attention
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Student Performance Summary */}
-      {dashboardData.studentPerformance.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Student Performance Overview</CardTitle>
-            <CardDescription>Assessment results summary</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {dashboardData.studentPerformance.map((student, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg"
-                >
-                  <div className="flex-1">
-                    <p className="font-medium text-neutral-900">
-                      {student.studentName}
-                    </p>
-                    <p className="text-sm text-neutral-600">
-                      {student.assessmentCount} assessment
-                      {student.assessmentCount !== 1 ? "s" : ""} completed
-                    </p>
+        {/* Student Performance Summary */}
+        {dashboardData.studentPerformance.length > 0 && (
+          <Card className="border-gray-200">
+            <CardHeader className="pb-3 sm:pb-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
+                <CardTitle className="text-base sm:text-lg">
+                  Student Performance Overview
+                </CardTitle>
+              </div>
+              <CardDescription className="text-xs sm:text-sm">
+                Assessment results summary
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {dashboardData.studentPerformance.map((student, idx) => (
+                  <div
+                    key={idx}
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-gray-50 rounded-lg border border-gray-100"
+                  >
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-900 text-sm sm:text-base">
+                        {student.studentName}
+                      </p>
+                      <p className="text-xs sm:text-sm text-gray-600">
+                        {student.assessmentCount} assessment
+                        {student.assessmentCount !== 1 ? "s" : ""} completed
+                      </p>
+                    </div>
+                    <div className="text-left sm:text-right">
+                      <p
+                        className={`text-xl sm:text-2xl font-bold ${
+                          student.averageScore >= 70
+                            ? "text-green-600"
+                            : student.averageScore >= 50
+                            ? "text-yellow-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {student.averageScore}%
+                      </p>
+                      <p className="text-xs text-gray-500">Average</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p
-                      className={`text-lg font-bold ${
-                        student.averageScore >= 70
-                          ? "text-green-600"
-                          : student.averageScore >= 50
-                          ? "text-yellow-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {student.averageScore}%
-                    </p>
-                    <p className="text-xs text-neutral-500">Average</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Students Progress List */}
-      {students.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Student Progress</CardTitle>
-            <CardDescription>
-              Monitor your students learning journey
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {students.map((student) => (
-                <div
-                  key={student.id}
-                  className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition"
-                >
-                  <div className="flex-1">
-                    <p className="font-medium text-neutral-900">
-                      {student.name}
-                    </p>
-                    <div className="flex items-center gap-4 mt-2">
+        {/* Students Progress List */}
+        {students.length > 0 ? (
+          <Card className="bg-blue-50/50 border-blue-100">
+            <CardHeader className="pb-3 sm:pb-4">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                <CardTitle className="text-base sm:text-lg">
+                  Student Progress
+                </CardTitle>
+              </div>
+              <CardDescription className="text-xs sm:text-sm">
+                Monitor your students learning journey
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 sm:space-y-4">
+                {students.map((student) => (
+                  <div
+                    key={student.id}
+                    className="p-3 sm:p-4 bg-white rounded-lg border border-gray-200"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                      <p className="font-semibold text-gray-900 text-sm sm:text-base">
+                        {student.name}
+                      </p>
+                      <span className="text-base sm:text-lg font-bold text-gray-900">
+                        {student.progress}%
+                      </span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                       <div
-                        className={`px-3 py-1 rounded-full text-xs font-semibold capitalize ${
+                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold capitalize border ${
                           skillLevelColor[student.level.toLowerCase()]
                         }`}
                       >
                         {student.level}
                       </div>
-                      <div className="flex-1 max-w-xs">
-                        <Progress value={student.progress} className="h-2" />
+                      <div className="flex items-center gap-2 flex-1">
+                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden max-w-[150px]">
+                          <div
+                            className="h-full bg-gray-900 rounded-full transition-all duration-500"
+                            style={{ width: `${student.progress}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-semibold text-gray-600">
+                          {student.progress}%
+                        </span>
                       </div>
-                      <span className="text-sm font-medium text-neutral-600">
-                        {student.progress}%
-                      </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 mt-2">
                       {student.moduleCount} module
                       {student.moduleCount !== 1 ? "s" : ""} in progress
                     </p>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <p className="text-gray-500">
-              No student progress data available yet
-            </p>
-          </CardContent>
-        </Card>
-      )}
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="border-gray-200">
+            <CardContent className="py-8 text-center">
+              <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-500">
+                No student progress data available yet
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Module Progress Details */}
-      {dashboardData.progressOverview.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Module Progress Details</CardTitle>
-            <CardDescription>
-              Detailed view of student module progress
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {dashboardData.progressOverview.map((progress) => (
-                <div
-                  key={progress._id}
-                  className="flex items-center justify-between p-3 bg-white border border-neutral-200 rounded-lg"
-                >
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">
-                      {progress.userId.name}
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      {progress.moduleId.title}
-                    </p>
+        {/* Module Progress Details */}
+        {dashboardData.progressOverview.length > 0 && (
+          <Card className="border-gray-200">
+            <CardHeader className="pb-3 sm:pb-4">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700" />
+                <CardTitle className="text-base sm:text-lg">
+                  Module Progress Details
+                </CardTitle>
+              </div>
+              <CardDescription className="text-xs sm:text-sm">
+                Detailed view of student module progress
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {dashboardData.progressOverview.map((progress) => (
+                  <div
+                    key={progress._id}
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 bg-gray-50 rounded-lg border border-gray-100"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-gray-900 truncate">
+                        {progress.userId.name}
+                      </p>
+                      <p className="text-xs text-gray-600 truncate">
+                        {progress.moduleId.title}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden w-20 sm:w-24">
+                        <div
+                          className="h-full bg-gray-900 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${progress.completionPercentage}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900 w-10 text-right">
+                        {progress.completionPercentage}%
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Progress
-                      value={progress.completionPercentage}
-                      className="h-2 w-24"
-                    />
-                    <span className="text-sm font-medium text-neutral-600 w-12 text-right">
-                      {progress.completionPercentage}%
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
