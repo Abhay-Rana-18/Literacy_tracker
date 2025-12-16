@@ -1,0 +1,753 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { api } from "@/lib/api";
+import {
+  Plus,
+  MoreVertical,
+  Edit,
+  Trash2,
+  BarChart3,
+  Copy,
+} from "lucide-react";
+
+interface Question {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: string;
+  explanation?: string;
+}
+
+interface Assessment {
+  _id: string;
+  title: string;
+  description: string;
+  skillCategory: string;
+  questions: Question[];
+  totalPoints: number;
+  timeLimit?: number;
+}
+
+interface SubmitAnswer {
+  questionId: string;
+  userAnswer: string;
+}
+
+interface Statistics {
+  assessment: {
+    id: string;
+    title: string;
+    totalQuestions: number;
+  };
+  statistics: {
+    totalAttempts: number;
+    averageScore: number;
+    scoreDistribution: {
+      literate: number;
+      semiLiterate: number;
+      illiterate: number;
+    };
+    highestScore: number;
+    lowestScore: number;
+  };
+  recentResults: Array<{
+    studentName: string;
+    studentEmail: string;
+    score: number;
+    completedAt: string;
+  }>;
+}
+
+export default function AssessmentModule() {
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [selectedAssessment, setSelectedAssessment] =
+    useState<Assessment | null>(null);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState<{ [key: string]: string }>({});
+  const [isStarted, setIsStarted] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [userRole, setUserRole] = useState<string>("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [assessmentToDelete, setAssessmentToDelete] = useState<string | null>(
+    null
+  );
+  const [showStats, setShowStats] = useState(false);
+  const [statistics, setStatistics] = useState<Statistics | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const user = localStorage.getItem("user");
+    if (user) {
+      const userData = JSON.parse(user);
+      setUserRole(userData.role);
+    }
+    fetchAssessments();
+  }, []);
+
+  const fetchAssessments = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      const data = await api.get("/assessments");
+      setAssessments(data);
+
+      if (data.length > 0) {
+        setSelectedAssessment(data[0]);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Failed to load assessments");
+      if (err.response?.status === 401) {
+        router.push("/login");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStatistics = async (assessmentId: string) => {
+    setLoadingStats(true);
+    try {
+      const data = await api.get(`/assessments/${assessmentId}/statistics`);
+      setStatistics(data);
+      setShowStats(true);
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Failed to load statistics");
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!assessmentToDelete) return;
+
+    try {
+      await api.delete(`/assessments/${assessmentToDelete}`);
+      setAssessments(assessments.filter((a) => a._id !== assessmentToDelete));
+      if (selectedAssessment?._id === assessmentToDelete) {
+        setSelectedAssessment(assessments.length > 1 ? assessments[0] : null);
+      }
+      setDeleteDialogOpen(false);
+      setAssessmentToDelete(null);
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Failed to delete assessment");
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const handleDuplicate = async (assessmentId: string) => {
+    try {
+      const response = await api.post(`/assessments/${assessmentId}/duplicate`);
+      setAssessments([...assessments, response.assessment]);
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Failed to duplicate assessment");
+    }
+  };
+
+  const handleStart = () => {
+    if (!selectedAssessment) return;
+    setIsStarted(true);
+    setAnswers({});
+    setCurrentQuestion(0);
+  };
+
+  const handleAnswer = (questionId: string, answerValue: string) => {
+    setAnswers((prev) => ({
+      ...prev,
+      [questionId]: answerValue,
+    }));
+  };
+
+  const handleNext = () => {
+    if (
+      selectedAssessment &&
+      currentQuestion < selectedAssessment.questions.length - 1
+    ) {
+      setCurrentQuestion(currentQuestion + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(currentQuestion - 1);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedAssessment) return;
+
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const submitAnswers: SubmitAnswer[] = Object.entries(answers).map(
+        ([questionId, userAnswer]) => ({
+          questionId,
+          userAnswer,
+        })
+      );
+
+      const response = await api.post("/assessments/submit", {
+        assessmentId: selectedAssessment._id,
+        answers: submitAnswers,
+      });
+
+      setResult(response.result);
+      setIsCompleted(true);
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Failed to submit assessment");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const getProgress = () => {
+    if (!selectedAssessment) return 0;
+    return ((currentQuestion + 1) / selectedAssessment.questions.length) * 100;
+  };
+
+  const getAnsweredCount = () => {
+    return Object.keys(answers).length;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading assessments...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !selectedAssessment) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="max-w-md">
+          <CardContent className="pt-6">
+            <p className="text-red-600 mb-4">{error}</p>
+            <Button onClick={fetchAssessments}>Retry</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (assessments.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Card className="max-w-md">
+          <CardContent className="pt-6 text-center space-y-4">
+            <p className="text-gray-600 mb-4">
+              No assessments available at the moment
+            </p>
+            {(userRole === "teacher" || userRole === "admin") && (
+              <Button
+                onClick={() => router.push("/assessment/add")}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Assessment
+              </Button>
+            )}
+            <Button
+              onClick={() => router.push("/dashboard")}
+              variant="outline"
+              className="w-full"
+            >
+              Back to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Statistics View
+  if (showStats && statistics) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <Button
+          variant="outline"
+          onClick={() => setShowStats(false)}
+          className="mb-4"
+        >
+          ← Back to Assessments
+        </Button>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{statistics.assessment.title} - Statistics</CardTitle>
+            <CardDescription>
+              {statistics.assessment.totalQuestions} questions
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Overview Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold">
+                    {statistics.statistics.totalAttempts}
+                  </div>
+                  <p className="text-sm text-gray-600">Total Attempts</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {statistics.statistics.averageScore}%
+                  </div>
+                  <p className="text-sm text-gray-600">Average Score</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-green-600">
+                    {statistics.statistics.highestScore}%
+                  </div>
+                  <p className="text-sm text-gray-600">Highest Score</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-2xl font-bold text-red-600">
+                    {statistics.statistics.lowestScore}%
+                  </div>
+                  <p className="text-sm text-gray-600">Lowest Score</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Score Distribution */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Score Distribution</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-green-700 font-medium">
+                    Literate (≥70%)
+                  </span>
+                  <span className="font-bold">
+                    {statistics.statistics.scoreDistribution.literate}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-yellow-700 font-medium">
+                    Semi-Literate (50-69%)
+                  </span>
+                  <span className="font-bold">
+                    {statistics.statistics.scoreDistribution.semiLiterate}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-red-700 font-medium">
+                    Illiterate (&lt;50%)
+                  </span>
+                  <span className="font-bold">
+                    {statistics.statistics.scoreDistribution.illiterate}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Recent Results */}
+            {statistics.recentResults.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Recent Results</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {statistics.recentResults.map((result, idx) => (
+                      <div
+                        key={idx}
+                        className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                      >
+                        <div>
+                          <p className="font-medium">{result.studentName}</p>
+                          <p className="text-sm text-gray-600">
+                            {result.studentEmail}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p
+                            className={`font-bold ${
+                              result.score >= 70
+                                ? "text-green-600"
+                                : result.score >= 50
+                                ? "text-yellow-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {result.score}%
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(result.completedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isStarted && !isCompleted) {
+    return (
+      <div className="max-w-2xl mx-auto p-6">
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>Digital Skills Assessment</CardTitle>
+                <CardDescription>
+                  Choose an assessment to evaluate your digital literacy level
+                </CardDescription>
+              </div>
+              {(userRole === "teacher" || userRole === "admin") && (
+                <Button onClick={() => router.push("/assessment/add")}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {assessments.map((assessment) => (
+                <div
+                  key={assessment._id}
+                  className={`p-4 border-2 rounded-lg transition ${
+                    selectedAssessment?._id === assessment._id
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div
+                      onClick={() => setSelectedAssessment(assessment)}
+                      className="flex-1 cursor-pointer"
+                    >
+                      <h3 className="font-semibold text-lg">
+                        {assessment.title}
+                      </h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {assessment.description}
+                      </p>
+                      <div className="flex gap-4 mt-2 text-sm text-gray-500">
+                        <span>📝 {assessment.questions.length} questions</span>
+                        <span className="capitalize">
+                          📊 {assessment.skillCategory}
+                        </span>
+                        {assessment.timeLimit && (
+                          <span>⏱️ {assessment.timeLimit} minutes</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {(userRole === "teacher" || userRole === "admin") && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => fetchStatistics(assessment._id)}
+                          >
+                            <BarChart3 className="w-4 h-4 mr-2" />
+                            View Statistics
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              router.push(`/assessment/edit/${assessment._id}`)
+                            }
+                          >
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDuplicate(assessment._id)}
+                          >
+                            <Copy className="w-4 h-4 mr-2" />
+                            Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setAssessmentToDelete(assessment._id);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {selectedAssessment && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-900 mb-2">
+                  Assessment Overview:
+                </h3>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• {selectedAssessment.questions.length} questions</li>
+                  {selectedAssessment.timeLimit && (
+                    <li>
+                      • Time limit: {selectedAssessment.timeLimit} minutes
+                    </li>
+                  )}
+                  <li>• Multiple choice format</li>
+                  <li>• Your results will determine your skill level</li>
+                  <li>• Total points: {selectedAssessment.totalPoints}</li>
+                </ul>
+              </div>
+            )}
+
+            {userRole === "student" && (
+              <Button
+                onClick={handleStart}
+                className="w-full"
+                disabled={!selectedAssessment}
+              >
+                Start Assessment
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the
+                assessment.
+                {assessments.find((a) => a._id === assessmentToDelete) && (
+                  <span className="block mt-2 font-semibold">
+                    Note: If students have taken this assessment, deletion will
+                    be prevented.
+                  </span>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    );
+  }
+
+  if (isCompleted && result) {
+    return (
+      <div className="max-w-2xl mx-auto p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Assessment Completed!</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="text-center py-8">
+              <div className="text-5xl font-bold text-primary mb-2">
+                {result.percentage}%
+              </div>
+              <div className="text-2xl font-semibold mb-4">
+                Your Level:{" "}
+                <span className="text-yellow-600 capitalize">
+                  {result.digitalLiteracyLevel}
+                </span>
+              </div>
+              <div className="text-neutral-600">
+                You scored {result.score} out of{" "}
+                {selectedAssessment?.totalPoints} points
+              </div>
+              {result.feedback && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-blue-900">{result.feedback}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-4">
+              <Button
+                onClick={() => router.push("/dashboard")}
+                className="flex-1"
+              >
+                Back to Dashboard
+              </Button>
+              <Button
+                onClick={() => router.push("/learning-modules")}
+                variant="outline"
+                className="flex-1"
+              >
+                Continue Learning
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!selectedAssessment) return null;
+
+  const currentQ = selectedAssessment.questions[currentQuestion];
+
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <CardTitle>
+                Question {currentQuestion + 1} of{" "}
+                {selectedAssessment.questions.length}
+              </CardTitle>
+              <CardDescription>{selectedAssessment.title}</CardDescription>
+            </div>
+            <div className="text-right">
+              <span className="text-sm font-semibold text-neutral-600">
+                {Math.round(getProgress())}%
+              </span>
+              <p className="text-xs text-gray-500">
+                {getAnsweredCount()} answered
+              </p>
+            </div>
+          </div>
+          <Progress value={getProgress()} className="h-2" />
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          {error && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
+
+          <div>
+            <h2 className="text-lg font-semibold mb-4">{currentQ.question}</h2>
+
+            <RadioGroup
+              value={answers[currentQ.id] || ""}
+              onValueChange={(value) => handleAnswer(currentQ.id, value)}
+            >
+              <div className="space-y-3">
+                {currentQ.options.map((option, idx) => (
+                  <Label
+                    key={idx}
+                    className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition ${
+                      answers[currentQ.id] === option
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-neutral-200 hover:bg-neutral-50"
+                    }`}
+                  >
+                    <RadioGroupItem value={option} id={`option-${idx}`} />
+                    <span className="font-medium text-neutral-900">
+                      {option}
+                    </span>
+                  </Label>
+                ))}
+              </div>
+            </RadioGroup>
+          </div>
+
+          <div className="flex gap-4 justify-between">
+            <Button
+              onClick={handlePrevious}
+              disabled={currentQuestion === 0}
+              variant="outline"
+            >
+              Previous
+            </Button>
+
+            {currentQuestion === selectedAssessment.questions.length - 1 ? (
+              <Button
+                onClick={handleSubmit}
+                disabled={
+                  submitting ||
+                  getAnsweredCount() < selectedAssessment.questions.length
+                }
+              >
+                {submitting ? "Submitting..." : "Submit Assessment"}
+              </Button>
+            ) : (
+              <Button onClick={handleNext}>Next</Button>
+            )}
+          </div>
+
+          {getAnsweredCount() < selectedAssessment.questions.length &&
+            currentQuestion === selectedAssessment.questions.length - 1 && (
+              <p className="text-sm text-amber-600 text-center">
+                Please answer all questions before submitting
+              </p>
+            )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
