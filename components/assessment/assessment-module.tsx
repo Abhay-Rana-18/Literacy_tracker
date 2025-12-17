@@ -107,6 +107,16 @@ export default function AssessmentModule() {
   const [showStats, setShowStats] = useState(false);
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
+
+  // AI generator state
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiConfig, setAiConfig] = useState({
+    ageGroup: "13-18",
+    difficulty: "medium",
+    questionCount: 10,
+  });
+
   const router = useRouter();
 
   useEffect(() => {
@@ -160,9 +170,10 @@ export default function AssessmentModule() {
 
     try {
       await api.delete(`/assessments/${assessmentToDelete}`);
-      setAssessments(assessments.filter((a) => a._id !== assessmentToDelete));
+      const updated = assessments.filter((a) => a._id !== assessmentToDelete);
+      setAssessments(updated);
       if (selectedAssessment?._id === assessmentToDelete) {
-        setSelectedAssessment(assessments.length > 1 ? assessments[0] : null);
+        setSelectedAssessment(updated.length > 0 ? updated[0] : null);
       }
       setDeleteDialogOpen(false);
       setAssessmentToDelete(null);
@@ -184,6 +195,7 @@ export default function AssessmentModule() {
   const handleStart = () => {
     if (!selectedAssessment) return;
     setIsStarted(true);
+    setIsCompleted(false);
     setAnswers({});
     setCurrentQuestion(0);
   };
@@ -200,13 +212,13 @@ export default function AssessmentModule() {
       selectedAssessment &&
       currentQuestion < selectedAssessment.questions.length - 1
     ) {
-      setCurrentQuestion(currentQuestion + 1);
+      setCurrentQuestion((prev) => prev + 1);
     }
   };
 
   const handlePrevious = () => {
     if (currentQuestion > 0) {
-      setCurrentQuestion(currentQuestion - 1);
+      setCurrentQuestion((prev) => prev - 1);
     }
   };
 
@@ -231,6 +243,7 @@ export default function AssessmentModule() {
 
       setResult(response.result);
       setIsCompleted(true);
+      setIsStarted(false);
     } catch (err: any) {
       setError(err.response?.data?.error || "Failed to submit assessment");
     } finally {
@@ -305,7 +318,7 @@ export default function AssessmentModule() {
     );
   }
 
-  // Statistics View
+  // Statistics view
   if (showStats && statistics) {
     return (
       <div className="max-w-4xl mx-auto px-2 py-3 sm:px-6 sm:py-6">
@@ -328,7 +341,6 @@ export default function AssessmentModule() {
             </CardDescription>
           </CardHeader>
           <CardContent className="px-4 sm:px-6 space-y-4 sm:space-y-6">
-            {/* Overview Stats */}
             <div className="grid grid-cols-2 gap-2 sm:gap-4">
               <Card>
                 <CardContent className="pt-3 pb-3 px-2 sm:pt-6 sm:pb-6 sm:px-6">
@@ -372,7 +384,6 @@ export default function AssessmentModule() {
               </Card>
             </div>
 
-            {/* Score Distribution */}
             <Card>
               <CardHeader className="px-3 py-3 sm:px-6 sm:py-4">
                 <CardTitle className="text-base sm:text-lg">
@@ -407,7 +418,6 @@ export default function AssessmentModule() {
               </CardContent>
             </Card>
 
-            {/* Recent Results */}
             {statistics.recentResults.length > 0 && (
               <Card>
                 <CardHeader className="px-3 py-3 sm:px-6 sm:py-4">
@@ -469,7 +479,7 @@ export default function AssessmentModule() {
                   Digital Skills Assessment
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm mt-1">
-                  Choose an assessment to evaluate your digital literacy level
+                  Choose an assessment or generate a personalized one with AI.
                 </CardDescription>
               </div>
               {(userRole === "teacher" || userRole === "admin") && (
@@ -489,6 +499,145 @@ export default function AssessmentModule() {
               <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-red-600 text-xs sm:text-sm">{error}</p>
               </div>
+            )}
+
+            {/* AI generator for students */}
+            {userRole === "student" && (
+              <Card className="border border-dashed border-neutral-300 bg-neutral-50/70">
+                <CardHeader className="px-3 sm:px-4 py-3 sm:py-4">
+                  <CardTitle className="text-sm sm:text-base">
+                    Generate assessment with AI
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">
+                    Select your age group, difficulty, and number of questions
+                    to get a tailored test.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="px-3 sm:px-4 pb-4 space-y-3 sm:space-y-4">
+                  {aiError && (
+                    <div className="p-2 sm:p-3 rounded-md bg-red-50 border border-red-200 text-xs sm:text-sm text-red-700">
+                      {aiError}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs sm:text-sm">Age group</Label>
+                      <RadioGroup
+                        value={aiConfig.ageGroup}
+                        onValueChange={(value) =>
+                          setAiConfig((prev) => ({ ...prev, ageGroup: value }))
+                        }
+                      >
+                        <div className="space-y-1">
+                          <Label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
+                            <RadioGroupItem value="8-12" />
+                            <span>8 – 12 years</span>
+                          </Label>
+                          <Label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
+                            <RadioGroupItem value="13-18" />
+                            <span>13 – 18 years</span>
+                          </Label>
+                          <Label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
+                            <RadioGroupItem value="18+" />
+                            <span>18+ years</span>
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs sm:text-sm">Difficulty</Label>
+                      <RadioGroup
+                        value={aiConfig.difficulty}
+                        onValueChange={(value) =>
+                          setAiConfig((prev) => ({
+                            ...prev,
+                            difficulty: value,
+                          }))
+                        }
+                      >
+                        <div className="space-y-1">
+                          <Label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
+                            <RadioGroupItem value="easy" />
+                            <span>Easy</span>
+                          </Label>
+                          <Label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
+                            <RadioGroupItem value="medium" />
+                            <span>Medium</span>
+                          </Label>
+                          <Label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
+                            <RadioGroupItem value="hard" />
+                            <span>Hard</span>
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs sm:text-sm">
+                        No. of questions
+                      </Label>
+                      <input
+                        type="number"
+                        min={3}
+                        max={30}
+                        value={aiConfig.questionCount}
+                        onChange={(e) =>
+                          setAiConfig((prev) => ({
+                            ...prev,
+                            questionCount: Math.max(
+                              3,
+                              Math.min(30, Number(e.target.value) || 0)
+                            ),
+                          }))
+                        }
+                        className="h-9 w-full rounded-md border border-neutral-300 px-2 text-xs sm:text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    disabled={aiGenerating}
+                    onClick={async () => {
+                      if (!aiConfig.questionCount || aiConfig.questionCount < 3)
+                        return;
+                      try {
+                        setAiError("");
+                        setAiGenerating(true);
+
+                        const data = await api.post(
+                          "/ai-assessments/generate",
+                          {
+                            ageGroup: aiConfig.ageGroup,
+                            // difficulty: aiConfig.difficulty,
+                            questionCount: aiConfig.questionCount,
+                          }
+                        );
+
+                        const generated: Assessment = data.assessment;
+                        setAssessments((prev) => [...prev, generated]);
+                        setSelectedAssessment(generated);
+                        setIsStarted(true);
+                        setIsCompleted(false);
+                        setAnswers({});
+                        setCurrentQuestion(0);
+                      } catch (err: any) {
+                        setAiError(
+                          err?.response?.data?.error ||
+                            "Failed to generate assessment. Please try again."
+                        );
+                      } finally {
+                        setAiGenerating(false);
+                      }
+                    }}
+                    className="w-full sm:w-auto text-xs sm:text-sm"
+                  >
+                    {aiGenerating ? "Generating..." : "Generate with AI"}
+                  </Button>
+                </CardContent>
+              </Card>
             )}
 
             <div className="space-y-3">
@@ -604,7 +753,6 @@ export default function AssessmentModule() {
           </CardContent>
         </Card>
 
-        {/* Delete Confirmation Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent className="max-w-[95vw] sm:max-w-lg mx-2">
             <AlertDialogHeader>
