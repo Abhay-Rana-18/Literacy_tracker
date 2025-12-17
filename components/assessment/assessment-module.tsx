@@ -29,6 +29,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { api } from "@/lib/api";
 import {
   Plus,
@@ -54,7 +62,7 @@ interface Assessment {
   skillCategory: string;
   questions: Question[];
   totalPoints: number;
-  timeLimit?: number;
+  timeLimit?: number; // minutes
 }
 
 interface SubmitAnswer {
@@ -111,11 +119,16 @@ export default function AssessmentModule() {
   // AI generator state
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiError, setAiError] = useState("");
+  const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiConfig, setAiConfig] = useState({
     ageGroup: "13-18",
-    difficulty: "medium",
     questionCount: 10,
+    timeLimit: 5
   });
+
+  // Timer state
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
+  const [timeUp, setTimeUp] = useState(false);
 
   const router = useRouter();
 
@@ -128,6 +141,44 @@ export default function AssessmentModule() {
     fetchAssessments();
   }, []);
 
+  // Timer effect
+  useEffect(() => {
+    if (!isStarted || remainingSeconds === null) return;
+    if (remainingSeconds <= 0) {
+      setTimeUp(true);
+      if (!isCompleted && selectedAssessment && !submitting) {
+        void handleSubmit(true);
+      }
+      return;
+    }
+
+    const id = setInterval(
+      () => setRemainingSeconds((prev) => (prev !== null ? prev - 1 : prev)),
+      1000
+    );
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStarted, remainingSeconds, isCompleted, selectedAssessment, submitting]);
+
+  const startTimerForAssessment = (assessment: Assessment | null) => {
+    if (assessment?.timeLimit && assessment.timeLimit > 0) {
+      setRemainingSeconds(assessment.timeLimit * 60);
+      setTimeUp(false);
+    } else {
+      setRemainingSeconds(null);
+      setTimeUp(false);
+    }
+  };
+
+  const formatTime = (seconds: number | null) => {
+    if (seconds === null) return null;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, "0")}:${s
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
   const fetchAssessments = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -138,10 +189,7 @@ export default function AssessmentModule() {
 
       const data = await api.get("/assessments");
       setAssessments(data);
-
-      if (data.length > 0) {
-        setSelectedAssessment(data[0]);
-      }
+      if (data.length > 0) setSelectedAssessment(data[0]);
     } catch (err: any) {
       setError(err.response?.data?.error || "Failed to load assessments");
       if (err.response?.status === 401) {
@@ -167,7 +215,6 @@ export default function AssessmentModule() {
 
   const handleDelete = async () => {
     if (!assessmentToDelete) return;
-
     try {
       await api.delete(`/assessments/${assessmentToDelete}`);
       const updated = assessments.filter((a) => a._id !== assessmentToDelete);
@@ -198,6 +245,7 @@ export default function AssessmentModule() {
     setIsCompleted(false);
     setAnswers({});
     setCurrentQuestion(0);
+    startTimerForAssessment(selectedAssessment);
   };
 
   const handleAnswer = (questionId: string, answerValue: string) => {
@@ -217,23 +265,24 @@ export default function AssessmentModule() {
   };
 
   const handlePrevious = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion((prev) => prev - 1);
-    }
+    if (currentQuestion > 0) setCurrentQuestion((prev) => prev - 1);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (auto = false) => {
     if (!selectedAssessment) return;
+    if (submitting) return;
+
+    if (!auto && remainingSeconds !== null && remainingSeconds <= 0) {
+      setTimeUp(true);
+      return;
+    }
 
     setSubmitting(true);
     setError("");
 
     try {
       const submitAnswers: SubmitAnswer[] = Object.entries(answers).map(
-        ([questionId, userAnswer]) => ({
-          questionId,
-          userAnswer,
-        })
+        ([questionId, userAnswer]) => ({ questionId, userAnswer })
       );
 
       const response = await api.post("/assessments/submit", {
@@ -251,20 +300,51 @@ export default function AssessmentModule() {
     }
   };
 
+  const handleGenerateAI = async () => {
+    if (!aiConfig.questionCount || aiConfig.questionCount < 3) return;
+    try {
+      setAiError("");
+      setAiGenerating(true);
+
+      const data = await api.post("/ai-assessments/generate", {
+        ageGroup: aiConfig.ageGroup,
+        questionCount: aiConfig.questionCount,
+        timeLimit: aiConfig.timeLimit,
+      });
+
+      const generated: Assessment = data.assessment;
+      setAssessments((prev) => [...prev, generated]);
+      setSelectedAssessment(generated);
+      setIsStarted(true);
+      setIsCompleted(false);
+      setAnswers({});
+      setCurrentQuestion(0);
+      startTimerForAssessment(generated);
+      setAiModalOpen(false);
+    } catch (err: any) {
+      setAiError(
+        err?.response?.data?.error ||
+        "Failed to generate assessment. Please try again."
+      );
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   const getProgress = () => {
     if (!selectedAssessment) return 0;
     return ((currentQuestion + 1) / selectedAssessment.questions.length) * 100;
   };
 
-  const getAnsweredCount = () => {
-    return Object.keys(answers).length;
-  };
+  const getAnsweredCount = () => Object.keys(answers).length;
+
+  // ---------- LOADING / EMPTY ----------
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen px-2 sm:px-3">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto" />
           <p className="mt-4 text-gray-600 text-sm sm:text-base">
             Loading assessments...
           </p>
@@ -318,7 +398,8 @@ export default function AssessmentModule() {
     );
   }
 
-  // Statistics view
+  // ---------- STATISTICS VIEW ----------
+
   if (showStats && statistics) {
     return (
       <div className="max-w-4xl mx-auto px-2 py-3 sm:px-6 sm:py-6">
@@ -442,13 +523,12 @@ export default function AssessmentModule() {
                         </div>
                         <div className="text-left sm:text-right flex-shrink-0">
                           <p
-                            className={`font-bold text-base sm:text-lg ${
-                              result.score >= 70
-                                ? "text-green-600"
-                                : result.score >= 50
+                            className={`font-bold text-base sm:text-lg ${result.score >= 70
+                              ? "text-green-600"
+                              : result.score >= 50
                                 ? "text-yellow-600"
                                 : "text-red-600"
-                            }`}
+                              }`}
                           >
                             {result.score}%
                           </p>
@@ -467,6 +547,8 @@ export default function AssessmentModule() {
       </div>
     );
   }
+
+  // ---------- HOME VIEW: LIST + AI MODAL ----------
 
   if (!isStarted && !isCompleted) {
     return (
@@ -501,154 +583,28 @@ export default function AssessmentModule() {
               </div>
             )}
 
-            {/* AI generator for students */}
             {userRole === "student" && (
-              <Card className="border border-dashed border-neutral-300 bg-neutral-50/70">
-                <CardHeader className="px-3 sm:px-4 py-3 sm:py-4">
-                  <CardTitle className="text-sm sm:text-base">
-                    Generate assessment with AI
-                  </CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">
-                    Select your age group, difficulty, and number of questions
-                    to get a tailored test.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="px-3 sm:px-4 pb-4 space-y-3 sm:space-y-4">
-                  {aiError && (
-                    <div className="p-2 sm:p-3 rounded-md bg-red-50 border border-red-200 text-xs sm:text-sm text-red-700">
-                      {aiError}
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs sm:text-sm">Age group</Label>
-                      <RadioGroup
-                        value={aiConfig.ageGroup}
-                        onValueChange={(value) =>
-                          setAiConfig((prev) => ({ ...prev, ageGroup: value }))
-                        }
-                      >
-                        <div className="space-y-1">
-                          <Label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
-                            <RadioGroupItem value="8-12" />
-                            <span>8 – 12 years</span>
-                          </Label>
-                          <Label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
-                            <RadioGroupItem value="13-18" />
-                            <span>13 – 18 years</span>
-                          </Label>
-                          <Label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
-                            <RadioGroupItem value="18+" />
-                            <span>18+ years</span>
-                          </Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label className="text-xs sm:text-sm">Difficulty</Label>
-                      <RadioGroup
-                        value={aiConfig.difficulty}
-                        onValueChange={(value) =>
-                          setAiConfig((prev) => ({
-                            ...prev,
-                            difficulty: value,
-                          }))
-                        }
-                      >
-                        <div className="space-y-1">
-                          <Label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
-                            <RadioGroupItem value="easy" />
-                            <span>Easy</span>
-                          </Label>
-                          <Label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
-                            <RadioGroupItem value="medium" />
-                            <span>Medium</span>
-                          </Label>
-                          <Label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer">
-                            <RadioGroupItem value="hard" />
-                            <span>Hard</span>
-                          </Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label className="text-xs sm:text-sm">
-                        No. of questions
-                      </Label>
-                      <input
-                        type="number"
-                        min={3}
-                        max={30}
-                        value={aiConfig.questionCount}
-                        onChange={(e) =>
-                          setAiConfig((prev) => ({
-                            ...prev,
-                            questionCount: Math.max(
-                              3,
-                              Math.min(30, Number(e.target.value) || 0)
-                            ),
-                          }))
-                        }
-                        className="h-9 w-full rounded-md border border-neutral-300 px-2 text-xs sm:text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <Button
-                    type="button"
-                    disabled={aiGenerating}
-                    onClick={async () => {
-                      if (!aiConfig.questionCount || aiConfig.questionCount < 3)
-                        return;
-                      try {
-                        setAiError("");
-                        setAiGenerating(true);
-
-                        const data = await api.post(
-                          "/ai-assessments/generate",
-                          {
-                            ageGroup: aiConfig.ageGroup,
-                            // difficulty: aiConfig.difficulty,
-                            questionCount: aiConfig.questionCount,
-                          }
-                        );
-
-                        const generated: Assessment = data.assessment;
-                        setAssessments((prev) => [...prev, generated]);
-                        setSelectedAssessment(generated);
-                        setIsStarted(true);
-                        setIsCompleted(false);
-                        setAnswers({});
-                        setCurrentQuestion(0);
-                      } catch (err: any) {
-                        setAiError(
-                          err?.response?.data?.error ||
-                            "Failed to generate assessment. Please try again."
-                        );
-                      } finally {
-                        setAiGenerating(false);
-                      }
-                    }}
-                    className="w-full sm:w-auto text-xs sm:text-sm"
-                  >
-                    {aiGenerating ? "Generating..." : "Generate with AI"}
-                  </Button>
-                </CardContent>
-              </Card>
+              <Button
+                onClick={() => setAiModalOpen(true)}
+                className="w-full h-14 text-sm sm:text-base bg-gray-800/90 shadow-lg"
+              >
+                <span className="flex items-center gap-2">
+                  🤖 AI Generate Assessment
+                  <span className="text-xs font-normal text-purple-300">
+                    New
+                  </span>
+                </span>
+              </Button>
             )}
 
             <div className="space-y-3">
               {assessments.map((assessment) => (
                 <div
                   key={assessment._id}
-                  className={`p-3 sm:p-4 border-2 rounded-lg transition ${
-                    selectedAssessment?._id === assessment._id
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200"
-                  }`}
+                  className={`p-3 sm:p-4 border-2 rounded-lg transition ${selectedAssessment?._id === assessment._id
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200"
+                    }`}
                 >
                   <div className="flex justify-between items-start gap-2">
                     <div
@@ -730,9 +686,7 @@ export default function AssessmentModule() {
                 <ul className="text-xs sm:text-sm text-blue-800 space-y-1">
                   <li>• {selectedAssessment.questions.length} questions</li>
                   {selectedAssessment.timeLimit && (
-                    <li>
-                      • Time limit: {selectedAssessment.timeLimit} minutes
-                    </li>
+                    <li>• Time limit: {selectedAssessment.timeLimit} minutes</li>
                   )}
                   <li>• Multiple choice format</li>
                   <li>• Your results will determine your skill level</li>
@@ -752,6 +706,180 @@ export default function AssessmentModule() {
             )}
           </CardContent>
         </Card>
+
+        {/* AI Generation Modal */}
+        <Dialog open={aiModalOpen} onOpenChange={setAiModalOpen}>
+          <DialogContent className="w-[95vw] max-w-sm sm:max-w-md max-h-[90vh] p-0 bg-white shadow-2xl border border-gray-200 flex flex-col">
+            <DialogHeader className="px-6 py-8 border-b border-gray-100 bg-white">
+              <div className="text-center mb-2">
+                <div className="w-12 h-12 mx-auto bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg mb-4">
+                  <span className="text-white font-bold text-xl">🤖</span>
+                </div>
+              </div>
+              <DialogTitle className="text-xl font-bold text-gray-900 text-center mb-2">
+                AI Assessment Generator
+              </DialogTitle>
+              <DialogDescription className="text-sm text-gray-600 text-center leading-relaxed">
+                Create a custom digital skills test tailored to your age
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="p-6 sm:p-8 max-h-[50vh] overflow-y-auto bg-white">
+              {aiError && (
+                <div className="p-4 mb-6 bg-red-50 border border-red-100 rounded-2xl">
+                  <p className="text-sm text-red-700 font-medium">{aiError}</p>
+                </div>
+              )}
+
+              <div className="space-y-6">
+                <div>
+                  <Label className="text-sm font-semibold text-gray-900 mb-4 block">
+                    👥 Age Group
+                  </Label>
+                  <RadioGroup
+                    value={aiConfig.ageGroup}
+                    onValueChange={(value) =>
+                      setAiConfig((prev) => ({ ...prev, ageGroup: value }))
+                    }
+                    className="space-y-2"
+                  >
+                    {[
+                      { value: "8-12", label: "8-12 years", desc: "Beginner" },
+                      {
+                        value: "13-18",
+                        label: "13-18 years",
+                        desc: "Intermediate",
+                      },
+                      { value: "18+", label: "18+ years", desc: "Advanced" },
+                    ].map((option) => (
+                      <div
+                        key={option.value}
+                        className="group flex items-center gap-3 p-4 border border-gray-200 rounded-2xl hover:border-purple-300 hover:bg-purple-50/50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md"
+                      >
+                        <RadioGroupItem
+                          value={option.value}
+                          id={`age-${option.value}`}
+                          className="border-gray-300 group-hover:border-purple-500 flex-shrink-0"
+                        />
+                        <Label
+                          htmlFor={`age-${option.value}`}
+                          className="flex-1 cursor-pointer mb-0 p-0 hover:no-underline"
+                        >
+                          <div className="font-semibold text-sm text-gray-900">
+                            {option.label}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {option.desc}
+                          </div>
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-semibold text-gray-900 mb-4 block">
+                    📝 Number of Questions
+                  </Label>
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={3}
+                        max={30}
+                        value={aiConfig.questionCount}
+                        onChange={(e) =>
+                          setAiConfig((prev) => ({
+                            ...prev,
+                            questionCount: Math.max(
+                              3,
+                              Math.min(30, Number(e.target.value) || 0)
+                            ),
+                          }))
+                        }
+                        className="w-full h-14 pl-5 pr-16 text-lg font-bold text-gray-900 border-2 border-gray-200 rounded-2xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100/50 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                        placeholder="10"
+                      />
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-white px-2 py-1 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600">
+                        {aiConfig.questionCount} Qs
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 text-center px-2">
+                      Recommended: 10 questions • Range: 3–30
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-semibold text-gray-900 mb-4 block">
+                    ⏱️ Time Limit (minutes)
+                  </Label>
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min={1}
+                        max={120}
+                        value={aiConfig.timeLimit}
+                        onChange={(e) =>
+                          setAiConfig((prev) => ({
+                            ...prev,
+                            timeLimit: Math.max(
+                              1,
+                              Math.min(120, Number(e.target.value) || 0)
+                            ),
+                          }))
+                        }
+                        className="w-full h-12 pl-4 pr-16 text-base font-semibold text-gray-900 border-2 border-gray-200 rounded-2xl focus:border-purple-500 focus:ring-4 focus:ring-purple-100/50 transition-all duration-200 shadow-sm hover:shadow-md bg-white"
+                        placeholder="20"
+                      />
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 bg-white px-2 py-1 rounded-xl border border-gray-200 text-xs font-semibold text-gray-600">
+                        min
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 text-center px-2">
+                      Recommended: 20 minutes • Range: 1–120
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="px-6 py-6 sm:py-8 border-t border-gray-100 bg-white">
+              <div className="w-full space-y-3 sm:space-y-0 sm:space-x-3 flex flex-col sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setAiModalOpen(false)}
+                  className="flex-1 h-14 border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 shadow-sm font-semibold text-sm transition-all duration-200"
+                  disabled={aiGenerating}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  disabled={aiGenerating || aiConfig.questionCount < 3}
+                  onClick={handleGenerateAI}
+                  className="flex-1 h-14 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold text-sm shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 group"
+                >
+                  {aiGenerating ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Creating...</span>
+                    </>
+                  ) : (
+                    <>
+                      ✨ Generate Test
+                      <span className="text-xs opacity-90 group-hover:opacity-100 transition-opacity">
+                        ({aiConfig.questionCount})
+                      </span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent className="max-w-[95vw] sm:max-w-lg mx-2">
@@ -786,6 +914,8 @@ export default function AssessmentModule() {
       </div>
     );
   }
+
+  // ---------- COMPLETED VIEW ----------
 
   if (isCompleted && result) {
     return (
@@ -841,6 +971,8 @@ export default function AssessmentModule() {
     );
   }
 
+  // ---------- QUESTION VIEW (IN-PROGRESS) ----------
+
   if (!selectedAssessment) return null;
 
   const currentQ = selectedAssessment.questions[currentQuestion];
@@ -866,6 +998,18 @@ export default function AssessmentModule() {
               <p className="text-xs text-gray-500">
                 {getAnsweredCount()} answered
               </p>
+              {formatTime(remainingSeconds) && (
+                <p
+                  className={`text-xs mt-1 font-semibold ${timeUp
+                    ? "text-red-600"
+                    : remainingSeconds !== null && remainingSeconds <= 60
+                      ? "text-amber-600"
+                      : "text-gray-700"
+                    }`}
+                >
+                  Time left: {formatTime(remainingSeconds)}
+                </p>
+              )}
             </div>
           </div>
           <Progress value={getProgress()} className="h-2" />
@@ -875,6 +1019,14 @@ export default function AssessmentModule() {
           {error && (
             <div className="p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-600 text-xs sm:text-sm">{error}</p>
+            </div>
+          )}
+
+          {timeUp && (
+            <div className="p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-amber-700 text-xs sm:text-sm">
+                Time is over. Your answers are being submitted.
+              </p>
             </div>
           )}
 
@@ -891,11 +1043,10 @@ export default function AssessmentModule() {
                 {currentQ.options.map((option, idx) => (
                   <Label
                     key={idx}
-                    className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-4 border rounded-lg cursor-pointer transition ${
-                      answers[currentQ.id] === option
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-neutral-200 hover:bg-neutral-50"
-                    }`}
+                    className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-4 border rounded-lg cursor-pointer transition ${answers[currentQ.id] === option
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-neutral-200 hover:bg-neutral-50"
+                      }`}
                   >
                     <RadioGroupItem
                       value={option}
@@ -924,9 +1075,11 @@ export default function AssessmentModule() {
 
             {currentQuestion === selectedAssessment.questions.length - 1 ? (
               <Button
-                onClick={handleSubmit}
+                onClick={() => handleSubmit(false)}
                 disabled={
                   submitting ||
+                  timeUp ||
+                  (remainingSeconds !== null && remainingSeconds <= 0) ||
                   getAnsweredCount() < selectedAssessment.questions.length
                 }
                 className="flex-1"
@@ -935,14 +1088,22 @@ export default function AssessmentModule() {
                 {submitting ? "Submitting..." : "Submit"}
               </Button>
             ) : (
-              <Button onClick={handleNext} className="flex-1" size="sm">
+              <Button
+                onClick={handleNext}
+                disabled={
+                  timeUp || (remainingSeconds !== null && remainingSeconds <= 0)
+                }
+                className="flex-1"
+                size="sm"
+              >
                 Next
               </Button>
             )}
           </div>
 
           {getAnsweredCount() < selectedAssessment.questions.length &&
-            currentQuestion === selectedAssessment.questions.length - 1 && (
+            currentQuestion === selectedAssessment.questions.length - 1 &&
+            !timeUp && (
               <p className="text-xs sm:text-sm text-amber-600 text-center">
                 Please answer all questions before submitting
               </p>
